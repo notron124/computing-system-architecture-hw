@@ -1,0 +1,6 @@
+execve("./helloworld", ["./helloworld"], 0x7ffe14cd7e20 /* 29 vars */) = 0
+creat("../output/output.txt", 0644)     = 3
+write(3, "Hello world!\n", 13)          = 13
+close(3)                                = 0
+exit(0)                                 = ?
++++ exited with 0 +++

@@ -1,0 +1,4 @@
+execve("./helloworld", ["./helloworld"], 0x7fff2f7a6cd0 /* 29 vars */) = 0
+write(85, "Hello world!\n", 13)         = -1 EBADF (Bad file descriptor)
+exit(9)                                 = ?
++++ exited with 9 +++
