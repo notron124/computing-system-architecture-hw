@@ -1,3 +1,5 @@
+bits 64
+default rel
 global _start
 
 section .data

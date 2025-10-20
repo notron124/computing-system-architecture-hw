@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 project(Hello_World LANGUAGES ASM_NASM)
 
-set(CMAKE_ASM_NASM_OBJECT_FORMAT elf64)
+set(CMAKE_ASM_NASM_OBJECT_FORMAT elf64) # почему-то не везде работает
 
 option(BUILD_BROKEN_EXAMPLE "Build broken example, that returns error" OFF)
 
