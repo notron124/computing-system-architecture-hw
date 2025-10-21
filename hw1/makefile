@@ -6,12 +6,12 @@ build-image:
 normal: build-image
 	mkdir -p output
 	docker run --rm -v $(PWD)/output:/workspace/output nasm-build \
-			sh -c "cmake -DCMAKE_ASM_NASM_OBJECT_FORMAT=elf64 -DBUILD_BROKEN_EXAMPLE=OFF -B build_normal && cmake --build build_normal --verbose --target run_strace"
+			sh -c "nasm -f elf64 helloworld.asm -o helloworld.o -l output/helloworld.lst && ld -o helloworld helloworld.o && strace -o output/strace_output.txt ./helloworld"
 
 broken: build-image
 	mkdir -p output
 	docker run --rm -v $(PWD)/output:/workspace/output nasm-build \
-			sh -c "cmake -DCMAKE_ASM_NASM_OBJECT_FORMAT=elf64 -DBUILD_BROKEN_EXAMPLE=ON -B build_broken && cmake --build build_broken --verbose --target run_strace"
+			sh -c "nasm -f elf64 helloworld_broken.asm -o helloworld_broken.o -l output/helloworld_broken.lst && ld -o helloworld_broken helloworld_broken.o && strace -o output/strace_output_broken.txt ./helloworld_broken"
 
 all: normal broken
 

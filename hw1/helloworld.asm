@@ -3,7 +3,7 @@ default rel
 global _start
 
 section .data
-    filename db "../output/output.txt", 0
+    filename db "output/output.txt", 0
     filename_length equ $ - filename
     message db "Hello world!", 10
     message_length  equ $ - message
