@@ -1,0 +1,61 @@
+     1                                  bits 64
+     2                                  default rel
+     3                                  global _start
+     4                                  
+     5                                  section .data
+     6 00000000 6F75747075742F6F75-         filename db "output/output.txt", 0
+     6 00000009 747075742E74787400 
+     7                                      filename_length equ $ - filename
+     8 00000012 48656C6C6F20776F72-         message db "Hello world!", 10
+     8 0000001B 6C64210A           
+     9                                      message_length  equ $ - message
+    10                                  
+    11                                  section .text
+    12                                  _start:
+    13                                      ; Открыть или создать файл
+    14 00000000 B855000000                  mov rax, 85                 ; 85 - системный вызов sys_creat
+    15 00000005 48BF-                       mov rdi, filename
+    15 00000007 [0000000000000000] 
+    16 0000000F BEA4010000                  mov rsi, 0o644              ; 6 - rw для роли owner (r = 4, w = 2, x = 1), 4 - read для остальных
+    17 00000014 0F05                        syscall
+    18                                      
+    19 00000016 4885C0                      test rax, rax               ; eax and eax, выставляет SF флаг, если eax отрицательный
+    20 00000019 783C                        js handle_error             ; jump if sign, провека на флаг знака
+    21                                  
+    22 0000001B 4889C3                      mov rbx, rax                ; Системный вызов возвращает
+    23                                                                  ; дескриптор файла, сохраняем его в регистр rbx                                
+    24                                      
+    25                                      ; Запись в файл
+    26 0000001E B801000000                  mov rax, 1
+    27 00000023 4889DF                      mov rdi, rbx
+    28 00000026 48BE-                       mov rsi, message
+    28 00000028 [1200000000000000] 
+    29 00000030 BA0D000000                  mov rdx, message_length
+    30 00000035 0F05                        syscall
+    31                                  
+    32 00000037 4885C0                      test rax, rax               
+    33 0000003A 781B                        js handle_error
+    34                                  
+    35                                      ; Закрыть файл
+    36 0000003C B803000000                  mov rax, 3                  ; 3 - системный вызов sys_close
+    37 00000041 4889DF                      mov rdi, rbx                ; передаем в него файл дескриптор
+    38 00000044 0F05                        syscall
+    39                                  
+    40 00000046 4885C0                      test rax, rax               
+    41 00000049 780C                        js handle_error             ; А как проверять функции, которые возвращают
+    42                                                                  ; отрицательное число? Делать функцию, которая
+    43                                                                  ; будет возвращать явную константу на ошибку,
+    44                                                                  ; или есть способ лучше?
+    45                                  
+    46                                      ; Выход
+    47 0000004B B83C000000                  mov rax, 60
+    48 00000050 BF00000000                  mov rdi, 0
+    49 00000055 0F05                        syscall
+    50                                  
+    51                                  ; На C я бы сделал текстовый вывод под каждую ошибку, если успею, то сделаю и
+    52                                  ; тут. (Прим. "Failed to open/create *file_name*, errno: %d")
+    53                                  handle_error:
+    54 00000057 48F7D8                      neg rax
+    55 0000005A 4889C7                      mov rdi, rax
+    56 0000005D B83C000000                  mov rax, 60
+    57 00000062 0F05                        syscall
