@@ -1,0 +1,42 @@
+     1                                  bits 64
+     2                                  default rel
+     3                                  global _start
+     4                                  
+     5                                  section .data
+     6 00000000 48656C6C6F20776F72-         message db "Hello world!", 10
+     6 00000009 6C64210A           
+     7                                      message_length  equ $ - message
+     8 0000000D 4572726F7220777269-         err_msg db "Error writing to stdout", 10
+     8 00000016 74696E6720746F2073-
+     8 0000001F 74646F75740A       
+     9                                      err_msg_len equ $ - err_msg
+    10                                  
+    11                                  section .text
+    12                                  _start:
+    13                                      ; Запись в файл
+    14 00000000 B801000000                  mov rax, 1
+    15 00000005 BF01000000                  mov rdi, 1
+    16 0000000A 48BE-                       mov rsi, message
+    16 0000000C [0000000000000000] 
+    17 00000014 BA0D000000                  mov rdx, message_length
+    18 00000019 0F05                        syscall
+    19                                  
+    20 0000001B 4883F80D                    cmp rax, message_length     ; Выставляет флаг нуля (ZF), если left_operand == right_operand
+    21 0000001F 750C                        jnz handle_error            ; jump if not zero 
+    22                                  
+    23                                      ; Выход
+    24 00000021 B83C000000                  mov rax, 60
+    25 00000026 BF00000000                  mov rdi, 0                  ; Возвращаем 0 при успешном завершении
+    26 0000002B 0F05                        syscall
+    27                                  
+    28                                  handle_error:
+    29 0000002D B801000000                  mov rax, 1
+    30 00000032 BF02000000                  mov rdi, 2
+    31 00000037 48BE-                       mov rsi, err_msg
+    31 00000039 [0D00000000000000] 
+    32 00000041 BA18000000                  mov rdx, err_msg_len
+    33 00000046 0F05                        syscall
+    34                                  
+    35 00000048 B83C000000                  mov rax, 60
+    36 0000004D BF01000000                  mov rdi, 1
+    37 00000052 0F05                        syscall

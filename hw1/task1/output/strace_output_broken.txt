@@ -1,0 +1,5 @@
+execve("./helloworld_broken", ["./helloworld_broken"], 0x7fff0c536060 /* 4 vars */) = 0
+write(1, "H", 1)                        = 1
+write(2, "\nError writing to stdout\n", 25) = 25
+exit(1)                                 = ?
++++ exited with 1 +++

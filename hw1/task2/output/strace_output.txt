@@ -1,4 +1,4 @@
-execve("./helloworld", ["./helloworld"], 0x7ffd252eae00 /* 4 vars */) = 0
+execve("./helloworld", ["./helloworld"], 0x7fff77a7c4a0 /* 4 vars */) = 0
 creat("output/output.txt", 0644)        = 3
 write(3, "Hello world!\n", 13)          = 13
 close(3)                                = 0
