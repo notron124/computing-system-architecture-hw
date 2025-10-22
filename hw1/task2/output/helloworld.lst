@@ -1,0 +1,92 @@
+     1                                  bits 64
+     2                                  default rel
+     3                                  global _start
+     4                                  
+     5                                  section .data
+     6 00000000 6F75747075742F6F75-         filename db "output/output.txt", 0
+     6 00000009 747075742E74787400 
+     7                                      filename_length equ $ - filename
+     8 00000012 48656C6C6F20776F72-         message db "Hello world!", 10
+     8 0000001B 6C64210A           
+     9                                      message_length  equ $ - message
+    10 0000001F 4572726F7220637265-         err_creat_file db "Error creating file", 10
+    10 00000028 6174696E672066696C-
+    10 00000031 650A               
+    11                                      err_creat_file_len equ $ - err_creat_file
+    12 00000033 4572726F7220777269-         err_write_file db "Error writing to file", 10
+    12 0000003C 74696E6720746F2066-
+    12 00000045 696C650A           
+    13                                      err_write_file_len equ $ - err_write_file
+    14 00000049 4572726F7220636C6F-         err_close_file db "Error closing file", 10
+    14 00000052 73696E672066696C65-
+    14 0000005B 0A                 
+    15                                      err_close_file_len equ $ - err_close_file
+    16                                  
+    17                                  section .text
+    18                                  _start:
+    19                                      ; Открыть или создать файл
+    20 00000000 B855000000                  mov rax, 85                 ; 85 - системный вызов sys_creat
+    21 00000005 48BF-                       mov rdi, filename
+    21 00000007 [0000000000000000] 
+    22 0000000F BEA4010000                  mov rsi, 0o644              ; 6 - rw для роли owner (r = 4, w = 2, x = 1), 4 - read для остальных
+    23 00000014 0F05                        syscall
+    24                                  
+    25 00000016 48B9-                       mov rcx, err_creat_file
+    25 00000018 [1F00000000000000] 
+    26 00000020 41B814000000                mov r8, err_creat_file_len
+    27                                      
+    28 00000026 4885C0                      test rax, rax               ; eax and eax, выставляет SF флаг, если eax отрицательный
+    29 00000029 785D                        js handle_error             ; jump if sign, провека на флаг знака
+    30                                  
+    31 0000002B 4889C3                      mov rbx, rax                ; Системный вызов возвращает
+    32                                                                  ; дескриптор файла, сохраняем его в регистр rbx                                
+    33                                      
+    34                                      ; Запись в файл
+    35 0000002E B801000000                  mov rax, 1
+    36 00000033 4889DF                      mov rdi, rbx
+    37 00000036 48BE-                       mov rsi, message
+    37 00000038 [1200000000000000] 
+    38 00000040 BA0D000000                  mov rdx, message_length
+    39 00000045 0F05                        syscall
+    40                                  
+    41 00000047 48B9-                       mov rcx, err_write_file
+    41 00000049 [3300000000000000] 
+    42 00000051 41B816000000                mov r8, err_write_file_len
+    43                                  
+    44 00000057 4883F80D                    cmp rax, message_length     ; Выставляет флаг нуля (ZF), если left_operand == right_operand
+    45 0000005B 752B                        jnz handle_error            ; jump if not zero 
+    46                                  
+    47                                      ; Закрыть файл
+    48 0000005D B803000000                  mov rax, 3                  ; 3 - системный вызов sys_close
+    49 00000062 4889DF                      mov rdi, rbx                ; передаем в него файл дескриптор
+    50 00000065 0F05                        syscall
+    51                                  
+    52 00000067 48B9-                       mov rcx, err_close_file
+    52 00000069 [4900000000000000] 
+    53 00000071 41B813000000                mov r8, err_close_file_len
+    54                                  
+    55 00000077 4885C0                      test rax, rax               
+    56 0000007A 780C                        js handle_error             ; А как проверять функции, которые возвращают
+    57                                                                  ; отрицательное число? Делать функцию, которая
+    58                                                                  ; будет возвращать явную константу на ошибку,
+    59                                                                  ; или есть способ лучше?
+    60                                                                  ; Ответ от преподавателя -> смотреть спецификацию стандарта.
+    61                                  
+    62                                      ; Выход
+    63 0000007C B83C000000                  mov rax, 60
+    64 00000081 BF00000000                  mov rdi, 0                  ; Возвращаем 0 при корректной работе
+    65 00000086 0F05                        syscall
+    66                                  
+    67                                  handle_error:
+    68                                      ; neg rax                   ; Почитал и это не согласутеся со стандартом, при
+    69                                      ; mov rdi, rax              ; некорректном выполнении код завершения всегда = 1
+    70                                  
+    71 00000088 B801000000                  mov rax, 1
+    72 0000008D BF02000000                  mov rdi, 2                  ; stderr
+    73 00000092 4889CE                      mov rsi, rcx                ; последний указатель на строку, который был помещен данный регистр
+    74 00000095 4C89C2                      mov rdx, r8                 ; длина последней строки
+    75 00000098 0F05                        syscall    
+    76                                  
+    77 0000009A B83C000000                  mov rax, 60
+    78 0000009F BF01000000                  mov rdi, 1                  ; Возвращаем 1 при возникновении ошибки
+    79 000000A4 0F05                        syscall

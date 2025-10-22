@@ -21,3 +21,9 @@ clean:
 results:
 	@echo "=== Results ==="
 	@ls -la output/
+	@echo "=== output ==="
+	@cat output/output.txt
+	@echo "=== strace output ==="
+	@cat output/strace_output.txt
+	@echo "=== strace output broken ==="
+	@cat output/strace_output_broken.txt

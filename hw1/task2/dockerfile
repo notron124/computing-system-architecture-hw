@@ -1,0 +1,16 @@
+FROM ubuntu:22.04
+
+# Скачиваем все зависимости
+RUN apt-get update && apt-get install -y \
+    nasm \
+    strace \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/* # Уменьшает размер образа
+
+# Создаем рабочую директорию
+WORKDIR /workspace 
+
+RUN mkdir -p output
+
+# Копируем файлы с хоста в рабочую директорию
+COPY . .
