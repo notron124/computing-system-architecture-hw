@@ -1,0 +1,5 @@
+execve("./reverse_str", ["./reverse_str"], 0x7ffeabb7ae70 /* 5 vars */) = 0
+read(0, "ancd\n", 1024)                 = 5
+write(1, "dcna\n", 5)                   = 5
+exit(0)                                 = ?
++++ exited with 0 +++

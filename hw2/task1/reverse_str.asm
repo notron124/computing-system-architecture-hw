@@ -5,11 +5,12 @@ global _start
 section .data
     write_msg db "Write some string: ", 0
     write_msg_len  equ $ - write_msg
-    err_msg db "Error reading stdin", 10
+    err_msg db "Error...", 10   ; Добавить краткое описание ошибок
     err_msg_len equ $ - err_msg
 
 section .bss
-    input resb 1024        ; 1KB буффер для входных данных
+    input resb 1024             ; 1KB буффер для входных данных
+    reversed_str resb 1024      ; 1KB буффер для "перевенутой" строки
 
 section .text
 _start:
@@ -23,17 +24,37 @@ read_stdin:
     mov rdx, 1024 
     syscall
 
-    test rax, rax               ; Проверка на корректное вовзращенное значение
+    test rax, rax               ; Проверка на корректное вовзращенное значение (>=0)
     js exit_with_error
 
-    jmp echo_stdout
+    mov rbx, rax                ; Сохраняем длину строки
+    mov rcx, rbx                ; Счетчик от конца строки
+    dec rcx                     ; Игнорируем перевод каретки
+
+    jmp flip_string
+
+; Разворот строки
+flip_string:
+    dec rcx                      ; уменьшаем счетчик, который указывает на конец input
+    js write_stdout              ; если он стал отрицательным, значит инвесия закончена - выходим
+
+    mov al, [input + rcx]        ; Получаем последний знак на данный момент 
+                                 ; al - младший байт регистра RAX, в данном случае необходим, так как данные длиной 1 байт 
+    mov [reversed_str + r8], al  ; помещаем последний знак в начало rersed_str
+    inc r8
+
+    jmp flip_string              ; Повторяем, пока не обработаем все знаки
 
 ; Запись в stdout
-echo_stdout:
-    mov rdx, rax                ; Передать кол-во прочитанных байт в rdx для вывода
-    mov rax, 1                  ; 1 - sys_write
-    mov rdi, 1                  ; 1 - stdout
-    mov rsi, input              ; Передать указатель на input буффер
+write_stdout:
+    mov al, 10
+    mov [reversed_str + r8], al   ; Перевод каретки
+    inc r8
+
+    mov rax, 1                      ; 1 - sys_write
+    mov rdi, 1                      ; 1 - stdout
+    mov rsi, reversed_str           ; Передать указатель на reserved_str буффер
+    mov rdx, r8                     ; Передать размер прочитанной строки
     syscall
 
     cmp rdx, rax                ; Проверить, что все данные были записаны в stdout
