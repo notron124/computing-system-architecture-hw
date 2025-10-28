@@ -53,9 +53,11 @@ _start:
 ; @note     Проверяет rax на содержание кода ошибки (отрицательное число) после
 ; @note     чтения из stdin
 read_stdin:
+    mov r8, rcx                     ; Сохранить rcx (rcx будет задействован в sys_write)
     mov rsi, write_msg              ; Выводим сообщение о необходимости ввести строку
     mov rdx, write_msg_len
     call write_stdout    
+    mov rcx, r8                     ; Восстановить rcx
 
     mov rax, 0                      ; 0 - sys_read
     mov rdi, 0                      ; 0 - stdin
@@ -74,8 +76,7 @@ read_stdin:
 ; Сообщение о пустой строке
 empty_string_warning:
     mov rsi, err_empty_str          ; Передаем указатель на строку с информацей об ошибке 
-    mov rdx, err_empty_str_len      ; Передаем ее длину
-    
+    mov rdx, err_empty_str_len      ; Передаем ее длину 
     call write_stdout               ; Вызываем функцию записи в stdout
 
     jmp read_stdin                  ; Повторяем попытку получить корректную строку от пользователя

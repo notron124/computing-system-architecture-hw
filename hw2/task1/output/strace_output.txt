@@ -1,7 +1,7 @@
-execve("./reverse_str", ["./reverse_str"], 0x7ffc60b320b0 /* 5 vars */) = 0
+execve("./reverse_str", ["./reverse_str"], 0x7ffd8d019e60 /* 5 vars */) = 0
 write(1, "Write some string: \0", 20)   = 20
-read(0, "ffffffffffffffff\n", 4198669)  = 17
+read(0, "a;lsdfjlasd;f\n", 1024)        = 14
 write(1, "Reversed: \0", 11)            = 11
-write(1, "ffffffffffffffff\n", 17)      = 17
+write(1, "f;dsaljfdsl;a\n", 14)         = 14
 exit(0)                                 = ?
 +++ exited with 0 +++
