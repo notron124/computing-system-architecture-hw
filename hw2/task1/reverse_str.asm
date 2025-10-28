@@ -5,6 +5,8 @@ global _start
 section .data
     write_msg db "Write some string: ", 0
     write_msg_len  equ $ - write_msg
+    reversed_msg db "Reversed: ", 0
+    reversed_msg_len equ $ - reversed_msg
     err_empty_str db "String should contain at least one character, try again", 10
     err_empty_str_len equ $ - err_empty_str
     err_critical_problem db "Program encountered critical error during read_stdin, flip_string or write_stdout", 10
@@ -23,6 +25,7 @@ _start:
     mov rdi, input                  ; Передаем указатель на массив, содержащий исходную строку
     mov rsi, reversed_str           ; Передаем указатель на массив, куда попадет перевернутая строка
     mov rdx, rax                    ; Передаем размер исходной строки
+
     mov r9, 1024                    ; Передаем размер reversed_std
     mov r10, rax                    ; Сохраняем размер исходной строки
 
@@ -31,9 +34,12 @@ _start:
     cmp r10, rax                    ; Проверяем, что "переворот" строки прошел успешно
     jnz exit_with_error
 
-    mov rsi, reversed_str           ; Выводим полученную строку 
-    mov rdx, rax
+    mov rsi, reversed_msg           ; Выводим сообщение "Reversed: "
+    mov rdx, reversed_msg_len
+    call write_stdout
 
+    mov rsi, reversed_str           ; Выводим полученную строку 
+    mov rdx, r10
     call write_stdout
 
     jmp exit
@@ -47,6 +53,10 @@ _start:
 ; @note     Проверяет rax на содержание кода ошибки (отрицательное число) после
 ; @note     чтения из stdin
 read_stdin:
+    mov rsi, write_msg              ; Выводим сообщение о необходимости ввести строку
+    mov rdx, write_msg_len
+    call write_stdout    
+
     mov rax, 0                      ; 0 - sys_read
     mov rdi, 0                      ; 0 - stdin
     mov rsi, rbx                    ; передаем указатель на массив, в который попадут введенные данные
