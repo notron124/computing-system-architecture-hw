@@ -1,5 +1,5 @@
-execve("./reverse_str", ["./reverse_str"], 0x7fff00e4c430 /* 5 vars */) = 0
-read(0, "sadf\n", 1024)                 = 5
-write(1, "fdas\n", 5)                   = 5
+execve("./reverse_str", ["./reverse_str"], 0x7fff0a96a3d0 /* 5 vars */) = 0
+read(0, "lkjfsdlkjasd\n", 1024)         = 13
+write(1, "dsajkldsfjkl\n", 13)          = 13
 exit(0)                                 = ?
 +++ exited with 0 +++

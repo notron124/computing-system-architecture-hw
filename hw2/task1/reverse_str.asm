@@ -5,31 +5,33 @@ global _start
 section .data
     write_msg db "Write some string: ", 0
     write_msg_len  equ $ - write_msg
-    err_empty_str db "String should contain at least one character, try again", 10   ; Добавить краткое описание ошибок
+    err_empty_str db "String should contain at least one character, try again", 10
     err_empty_str_len equ $ - err_empty_str
+    err_critical_problem db "Program encountered critical error during read_stdin, flip_string or write_stdout", 10
+    err_critical_problem_len equ $ - err_critical_problem
 
 section .bss
-    input resb 1024             ; 1KB буффер для входных данных
-    reversed_str resb 1024      ; 1KB буффер для "перевернутой" строки
+    input resb 1024             ; 1KB массив для входных данных
+    reversed_str resb 1024      ; 1KB массив для "перевернутой" строки
 
 section .text
 _start:
-    mov rbx, input
-    mov rcx, 1024
-    call read_stdin
+    mov rbx, input                  ; Передаем указатель на массив, куда попадет исходная строка
+    mov rcx, 1024                   ; Передаем размер этого массива
+    call read_stdin                 ; Вызываем функцию чтения из stdin
 
     mov rdi, input                  ; Передаем указатель на массив, содержащий исходную строку
     mov rsi, reversed_str           ; Передаем указатель на массив, куда попадет перевернутая строка
     mov rdx, rax                    ; Передаем размер исходной строки
-    
-    mov r9, rax                     ; Сохраняем размер исходной строки
+    mov r9, 1024                    ; Передаем размер reversed_std
+    mov r10, rax                    ; Сохраняем размер исходной строки
 
-    call flip_string
+    call flip_string                ; Вызываем функцию "переворота" строки
     
-    cmp r9, rax
+    cmp r10, rax                    ; Проверяем, что "переворот" строки прошел успешно
     jnz exit_with_error
 
-    mov rsi, reversed_str
+    mov rsi, reversed_str           ; Выводим полученную строку 
     mov rdx, rax
 
     call write_stdout
@@ -69,19 +71,28 @@ empty_string_warning:
     jmp read_stdin                  ; Повторяем попытку получить корректную строку от пользователя
 ; --- read_stdin ---
 
+; По-хорошему добавить еще один аргумент - размер массива, куда попадут данные,
+; чтобы проверять на возможность переполнения. (Если этот комметарий остался,
+; значит я не успел это сделать)
 ; --- flip_string ---
 ; @brief    Фукнция для "переворота" строки
 ; @param    rdi - указатель на массив исходных данных
 ; @param    rsi - указатель на массив, куда будет записана "перевенутая" строка
 ; @param    rdx - размер исходных данных
+; @param    r9  - размер массива для записи данных (rsi)
 ; @return   rax - размер записанных в массив, переданный в rsi, данных
 ; @note     Аналог на Си: int flip_string(char* input, char* output, size_t input_size)
-; @note     Проверяет, что rdx больше 1, иначе возвращает код ошибки -1
+; @note     Если rdx < 1 возвращает код ошибки -1
+; @note     Если размер исходных занных больше размера массива для записи
+; @note     данных, возвращаемт код ошибки -2 
 
 ; Инициализация необходимых значений
 flip_string:
-    cmp rdx, 1                      ; Если размер переданных данных меньше 1
+    cmp rdx, 1                      ; Если размер исходных данных меньше 1
     jl exit_flip_string_with_error  ; выходим с ошибкой
+
+    cmp rdx, r9                     ; Если размер исходных данных больше размера
+    jg exit_flip_string_overflow    ; массива, куда будут попадать "перевернутые" данные, выходим с ошибкой
 
     mov rcx, rdx                    ; Инициализируем счетчик, который будет указывать на текущий последний знак в строке
     dec rcx                         ; Пропускаем перевод каретки
@@ -113,6 +124,10 @@ end_flip_string:
 exit_flip_string_with_error:
     mov rax, -1
     ret
+
+exit_flip_string_overflow:
+    mov rax, -2
+    ret
 ; --- flip_string ---
 
 ; --- write_stdout ---
@@ -140,11 +155,11 @@ exit:
 
 ; Выход из программы с ошибкой
 exit_with_error:
-    ; mov rax, 1
-    ; mov rdi, 2
-    ; mov rsi, err_msg
-    ; mov rdx, err_msg_len
-    ; syscall
+    mov rax, 1
+    mov rdi, 2
+    mov rsi, err_critical_problem
+    mov rdx, err_critical_problem_len
+    syscall
 
     mov rax, 60
     mov rdi, 1
