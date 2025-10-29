@@ -1,4 +1,4 @@
-.PHONY: all normal broken clean
+.PHONY: interactive
 
 build-image:	
 	docker build -t nasm-build .
@@ -13,5 +13,3 @@ results:
 	@ls -la output/
 	@echo "=== strace output ==="
 	@cat output/strace_output.txt
-	@echo "=== strace output broken ==="
-	@cat output/strace_output_broken.txt

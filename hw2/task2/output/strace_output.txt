@@ -1,6 +1,7 @@
-execve("./helloworld", ["./helloworld"], 0x7fff77a7c4a0 /* 4 vars */) = 0
-creat("output/output.txt", 0644)        = 3
-write(3, "Hello world!\n", 13)          = 13
-close(3)                                = 0
+execve("./reverse_str", ["./reverse_str"], 0x7ffd8d019e60 /* 5 vars */) = 0
+write(1, "Write some string: \0", 20)   = 20
+read(0, "a;lsdfjlasd;f\n", 1024)        = 14
+write(1, "Reversed: \0", 11)            = 11
+write(1, "f;dsaljfdsl;a\n", 14)         = 14
 exit(0)                                 = ?
 +++ exited with 0 +++

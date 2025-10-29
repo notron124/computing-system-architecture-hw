@@ -1,6 +1,0 @@
-execve("./helloworld_broken", ["./helloworld_broken"], 0x7ffc770fa4c0 /* 4 vars */) = 0
-creat("output/output_broken.txt", 0644) = 3
-write(3, "Hello world!\nError creating file"..., 123) = 123
-write(2, "Error writing to file\n", 22) = 22
-exit(1)                                 = ?
-+++ exited with 1 +++
