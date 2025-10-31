@@ -7,9 +7,9 @@ section .data
     write_msg_len  equ $ - write_msg
     reversed_msg db "Reversed: ", 0
     reversed_msg_len equ $ - reversed_msg
-    err_empty_str db "String should contain at least one character, try again", 10
+    err_empty_str db "Input should contain atleast one digit, please try again", 10
     err_empty_str_len equ $ - err_empty_str
-    err_critical_problem db "Program encountered critical error during read_stdin, flip_string or write_stdout", 10
+    err_critical_problem db "Program encountered critical error during read_stdin, number conversion or write_stdout", 10
     err_critical_problem_len equ $ - err_critical_problem
 
 section .bss
@@ -25,13 +25,10 @@ _start:
     mov rcx, 1024                   ; Передаем размер этого массива
     call read_stdin                 ; Вызываем функцию чтения из stdin
 
-    mov rdi, input                  ; Передаем указатель на массив, содержащий исходную строку
-    mov rsi, reversed_str           ; Передаем указатель на массив, куда попадет перевернутая строка
-    mov rdx, rax                    ; Передаем размер исходной строки
-
-    mov r9, 1024                    ; Передаем размер reversed_std
-    mov r10, rax                    ; Сохраняем размер исходной строки
-
+    lea rax, [first_number]         ; Рассчитываем указатель на переменную
+    mov rdi, input                  ; Передаем указатель на массив, содержащий число в виде строки
+    mov rsi, rax                    ; Передаем указатель на переменную, куда запишем сконвертированное число
+    
     call flip_string                ; Вызываем функцию "переворота" строки
     
     cmp r10, rax                    ; Проверяем, что "переворот" строки прошел успешно
@@ -56,11 +53,11 @@ _start:
 ; @note     Проверяет rax на содержание кода ошибки (отрицательное число) после
 ; @note     чтения из stdin
 read_stdin:
-    mov r8, rcx                     ; Сохранить rcx (rcx будет задействован в sys_write)
+    push rcx                        ; Сохранить rcx (rcx будет задействован в sys_write)
     mov rsi, write_msg              ; Выводим сообщение о необходимости ввести строку
     mov rdx, write_msg_len
     call write_stdout    
-    mov rcx, r8                     ; Восстановить rcx
+    pop rcx                         ; Восстановить rcx
 
     mov rax, 0                      ; 0 - sys_read
     mov rdi, 0                      ; 0 - stdin
@@ -98,37 +95,26 @@ empty_string_warning:
 ; @note     данных, возвращаемт код ошибки -2 
 
 ; Инициализация необходимых значений
-flip_string:
-    cmp rdx, 1                      ; Если размер исходных данных меньше 1
-    jl exit_flip_string_with_error  ; выходим с ошибкой
+stoi64:
+    xor rdx, rdx
 
-    cmp rdx, r9                     ; Если размер исходных данных больше размера
-    jg exit_flip_string_overflow    ; массива, куда будут попадать "перевернутые" данные, выходим с ошибкой
+stoi64_loop:
+    mov al, [rdi + rdx]             ; Получаем текущий знак 
+    cmp al, 0                       ; al - младший байт регистра RAX, в данном случае необходим, так как данные длиной 1 байт 
+    je stoi64_end    
 
-    mov rcx, rdx                    ; Инициализируем счетчик, который будет указывать на текущий последний знак в строке
-    dec rcx                         ; Пропускаем перевод каретки
-    xor r9, r9                      ; обнуляем r9, так как будем исользовать
-                                    ; его в качестве счетчика обработанный байт
+    sub al, '0'
+    mov rax, [rsi]
+    mov rbx, 10
+    mul rbx
+    add qword [rsi], al
+    inc rdx
 
-; "Переворот" данных
-flip_string_loop:
-    dec rcx                         ; уменьшаем счетчик, который указывает на конец input
-    js end_flip_string              ; если он стал отрицательным, значит инвесия закончена - выходим
-
-    mov al, [rdi + rcx]             ; Получаем последний знак на данный момент 
-                                    ; al - младший байт регистра RAX, в данном случае необходим, так как данные длиной 1 байт 
-    mov [rsi + r9], al              ; помещаем последний знак в начало reversed_str
-    inc r9
-
-    jmp flip_string_loop            ; Повторяем, пока не обработаем все знаки
+    jmp stoi64_loop                 ; Повторяем, пока не обработаем все знаки
 
 ; Вставка перевода каретки в конец перевернутой строки
-end_flip_string: 
-    mov al, 10
-    mov [reversed_str + r9], al     ; Перевод каретки
-    inc r9
-
-    mov rax, r9
+stoi64_end: 
+    mov rax, [rsi]
 
     ret
 
