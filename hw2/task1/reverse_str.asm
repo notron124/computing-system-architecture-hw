@@ -70,11 +70,11 @@ _start:
 ; @note     Проверяет rax на содержание кода ошибки (отрицательное число) после
 ; @note     чтения из stdin
 read_stdin:
-    mov r8, rcx                     ; Сохранить rcx (rcx будет задействован в sys_write)
+    push rcx                        ; Сохранить rcx (rcx будет задействован в sys_write)
     mov rsi, write_msg              ; Выводим сообщение о необходимости ввести строку
     mov rdx, write_msg_len
     call write_stdout    
-    mov rcx, r8                     ; Восстановить rcx
+    pop rcx                         ; Восстановить rcx
 
     mov rax, 0                      ; 0 - sys_read
     mov rdi, 0                      ; 0 - stdin
