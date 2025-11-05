@@ -4,8 +4,10 @@ global _start
 
 section .data
     char_to_print db 0
-    write_msg db "Write some number: ", 0
-    write_msg_len  equ $ - write_msg
+    write1_msg db "Write first number: ", 0
+    write1_msg_len  equ $ - write1_msg
+    write2_msg db "Write second number: ", 0
+    write2_msg_len equ $ - write2_msg
     plus_msg db " + ", 0
     plus_msg_len equ $ - plus_msg
     equals_msg db " = ", 0
@@ -26,6 +28,10 @@ section .bss
 
 section .text
 _start:
+    mov rsi, write1_msg             ; Выводим сообщение о необходимости ввести число
+    mov rdx, write1_msg_len
+    call write_stdout    
+
     mov rbx, input                  ; Передаем указатель на массив, куда попадет исходная строка
     mov rcx, 1024                   ; Передаем размер этого массива
     call read_stdin                 ; Вызываем функцию чтения из stdin
@@ -35,6 +41,10 @@ _start:
     call stoi64                     ; Вызываем функцию "переворота" строки
 
     mov [first_number], rax         ; Сохраняем первое число в переменную
+
+    mov rsi, write2_msg             ; Выводим сообщение о необходимости ввести второе число
+    mov rdx, write2_msg_len
+    call write_stdout
 
     mov rbx, input                  ; Читаем второе число
     mov rcx, 1024
@@ -112,12 +122,6 @@ _start:
 ; @note     Проверяет rax на содержание кода ошибки (отрицательное число) после
 ; @note     чтения из stdin
 read_stdin:
-    push rcx                        ; Сохранить rcx (rcx будет задействован в sys_write)
-    mov rsi, write_msg              ; Выводим сообщение о необходимости ввести строку
-    mov rdx, write_msg_len
-    call write_stdout    
-    pop rcx                         ; Восстановить rcx
-
     mov rax, 0                      ; 0 - sys_read
     mov rdi, 0                      ; 0 - stdin
     mov rsi, rbx                    ; передаем указатель на массив, в который попадут введенные данные
@@ -138,7 +142,7 @@ empty_string_warning:
     mov rdx, err_empty_str_len      ; Передаем ее длину 
     call write_stdout               ; Вызываем функцию записи в stdout
 
-    jmp read_stdin                  ; Повторяем попытку получить корректную строку от пользователя
+    jmp _start                  ; Повторяем попытку получить корректную строку от пользователя
 ; --- read_stdin ---
 
 ; --- stoi64 ---
