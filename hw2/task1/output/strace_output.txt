@@ -1,0 +1,7 @@
+execve("./reverse_str", ["./reverse_str"], 0x7ffcf13ff810 /* 5 vars */) = 0
+write(1, "Write some string: \0", 20)   = 20
+read(0, "kasjdhfkasdf\n", 1024)         = 13
+write(1, "Reversed: \0", 11)            = 11
+write(1, "fdsakfhdjsak\n", 13)          = 13
+exit(0)                                 = ?
++++ exited with 0 +++
