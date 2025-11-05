@@ -3,21 +3,26 @@ default rel
 global _start
 
 section .data
-    write_msg db "Write some string: ", 0
+    char_to_print db 0
+    write_msg db "Write some number: ", 0
     write_msg_len  equ $ - write_msg
-    reversed_msg db "Reversed: ", 0
-    reversed_msg_len equ $ - reversed_msg
+    plus_msg db " + ", 0
+    plus_msg_len equ $ - plus_msg
+    equals_msg db " = ", 0
+    equals_msg_len equ $ - equals_msg
     err_empty_str db "Input should contain atleast one digit, please try again", 10
     err_empty_str_len equ $ - err_empty_str
-    err_critical_problem db "Program encountered critical error during read_stdin, number conversion or write_stdout", 10
+    err_wrong_char db " is not a decimal digit, try again", 10
+    err_wrong_char_len equ $ - err_wrong_char
+    err_critical_problem db "Program encountered critical error during read_stdin, number conversion, summ or write_stdout", 10
     err_critical_problem_len equ $ - err_critical_problem
 
 section .bss
-    input resb 1024             ; 1KB массив для входных данных
-    first_number dq 0           ; 64bit переменная для хранения первого числа
-    second_number dq 0          ; 64bit переменная для хранения второго числа
-    output resb 1024            ; 1KB массив для выходных данных
-
+    input resb      1024           ; 1KB массив для входных данных
+    first_number    dq      0      ; 64bit переменная для хранения первого числа
+    second_number   dq      0      ; 64bit переменная для хранения второго числа
+    sum             dq      0      ; 64bit переменная для суммы двух чисел
+    output resb     1024           ; 1KB массив для выходных данных
 
 section .text
 _start:
@@ -25,21 +30,75 @@ _start:
     mov rcx, 1024                   ; Передаем размер этого массива
     call read_stdin                 ; Вызываем функцию чтения из stdin
 
-    lea rax, [first_number]         ; Рассчитываем указатель на переменную
     mov rdi, input                  ; Передаем указатель на массив, содержащий число в виде строки
-    mov rsi, rax                    ; Передаем указатель на переменную, куда запишем сконвертированное число
     
-    call flip_string                ; Вызываем функцию "переворота" строки
-    
-    cmp r10, rax                    ; Проверяем, что "переворот" строки прошел успешно
-    jnz exit_with_error
+    call stoi64                     ; Вызываем функцию "переворота" строки
 
-    mov rsi, reversed_msg           ; Выводим сообщение "Reversed: "
-    mov rdx, reversed_msg_len
+    mov [first_number], rax         ; Сохраняем первое число в переменную
+
+    mov rbx, input                  ; Читаем второе число
+    mov rcx, 1024
+    call read_stdin
+
+    mov rdi, input                  ; Конвертируем второе число
+    call stoi64
+
+    mov [second_number], rax        ; Сохраняем его
+
+    mov rdi, [first_number]         ; Передаем первое число в функцию сложения
+    mov rsi, [second_number]        ; Передаем второе число в функцию сложения
+
+    call sum_of_two                 ; Вызываем функцию складывания
+
+    mov [sum], rax
+    
+    mov rdi, [first_number]         ; Передаем значение переменной
+    mov rsi, output                 ; Передаем указатель на массив, куда попадет строка 
+    mov rdx, 1024                   ; Длина переданного массива для проверки на overflow
+    call itos64
+
+    test rax, rax                   ; Проверка на отсутствие ошибки
+    js exit_with_error
+
+    mov rsi, output                 ; Выводим первое число
+    mov rdx, rax
     call write_stdout
 
-    mov rsi, reversed_str           ; Выводим полученную строку 
-    mov rdx, r10
+    mov rsi, plus_msg               ; Выводим знак +
+    mov rdx, plus_msg_len
+    call write_stdout
+
+    mov rdi, [second_number]        ; Конвертируем второе число в строку
+    mov rsi, output
+    mov rdx, 1024
+    call itos64
+
+    test rax, rax                   ; Проверяем на отсутствие ошибки
+    js exit_with_error
+
+    mov rsi, output                 ; Выводим второе число
+    mov rdx, rax
+    call write_stdout
+
+    mov rsi, equals_msg             ; Выводим знак =
+    mov rdx, equals_msg_len
+    call write_stdout
+
+    mov rdi, [sum]                  ; Конвертируем результат сложения
+    mov rsi, output
+    mov rdx, 1024
+    call itos64
+    
+    test rax, rax                   ; Проверяем на отсутствие ошибки
+    js exit_with_error
+    
+    mov rsi, output                 ; Выводим сумму
+    mov rdx, rax
+    call write_stdout
+
+    mov byte [char_to_print], 10    ; Перевод каретки
+    mov rsi, char_to_print
+    mov rdx, 1
     call write_stdout
 
     jmp exit
@@ -82,55 +141,196 @@ empty_string_warning:
     jmp read_stdin                  ; Повторяем попытку получить корректную строку от пользователя
 ; --- read_stdin ---
 
-; --- flip_string ---
+; --- stoi64 ---
 ; @brief    Фукнция для "переворота" строки
 ; @param    rdi - указатель на массив исходных данных
-; @param    rsi - указатель на массив, куда будет записана "перевенутая" строка
-; @param    rdx - размер исходных данных
-; @param    r9  - размер массива для записи данных (rsi)
-; @return   rax - размер записанных в массив, переданный в rsi, данных
-; @note     Аналог на Си: int flip_string(char* input, char* output, size_t input_size)
-; @note     Если rdx < 1 возвращает код ошибки -1
-; @note     Если размер исходных занных больше размера массива для записи
-; @note     данных, возвращаемт код ошибки -2 
+; @return   rax - строка переведенная в число
+; @note     Аналог на Си: int stoi64(char* input)
+; @note     Если в процессе парсинка встретилась не цифра, сообщает об этом и
+; @note     возвращается к старту
 
 ; Инициализация необходимых значений
 stoi64:
-    xor rdx, rdx
+    xor rax, rax
+    xor r8, r8
+    xor r9, r9
+    
+    mov cl, [rdi + r8]              ; Проверяем первый знак на наличие '-' 
+    cmp cl, '-'
+    je stoi64_neg                  ; Переходим к конвертации отрицательного числа 
 
 stoi64_loop:
-    mov al, [rdi + rdx]             ; Получаем текущий знак 
-    cmp al, 0                       ; al - младший байт регистра RAX, в данном случае необходим, так как данные длиной 1 байт 
-    je stoi64_end    
+    mov cl, [rdi + r8]              ; Получаем текущий знак 
+                                    ; cl - младший байт регистра RAX, в данном случае необходим, так как данные длиной 1 байт  
 
-    sub al, '0'
-    mov rax, [rsi]
-    mov rbx, 10
-    mul rbx
-    add qword [rsi], al
-    inc rdx
+    cmp cl, 10                      ; Проверяем на перевод каретки или нуль-терминатор
+    jle stoi64_end    
+    
+    ; Проверяем, что обрабатываем цифру, а не какой-либо другой знак
+    cmp cl, '0'                     
+    jl stoi64_err_exit    
+    cmp cl, '9'
+    ja stoi64_err_exit
+
+    sub cl, '0'                     ; Вычитаем '0' (в utf-8 = 32) из знака для получения "цифры"
+    mov rbx, 10                     ; Не заполняем rax, так как он и так используется в качестве 
+                                    ; первого операнда mul и будет хранить результат нашей конвертации
+    mul rbx                         ; rax * 10
+
+    movzx rcx, cl                   ; Расширить 8 бит до 64-х
+    
+    add rax, rcx
+    inc r8
 
     jmp stoi64_loop                 ; Повторяем, пока не обработаем все знаки
 
-; Вставка перевода каретки в конец перевернутой строки
-stoi64_end: 
-    mov rax, [rsi]
+stoi64_neg:
+    mov r9, -1
+    inc r8
+    jmp stoi64_loop
 
+; Для отладки на данный момент
+stoi64_end:
+    test r9, r9
+    js stoi64_neg_end
+ 
     ret
 
-exit_flip_string_with_error:
+stoi64_neg_end:
+    neg rax
+    ret
+
+; Вот и функция, которая может вернуть отрицательное число, при этом желательно
+; сделать возврат ошибок. Согласно стандарту, функции должны возвращать
+; коды ошибок отрицательным числом, так как быть в данном случае?
+; Какое бы число я в данном случае не вернул, оно может интерпретироваться
+; по-разному. Как ошибка и как число. 
+; Единственный вариант решения, который я вижу, это передача 
+; указателя на переменную, в которую напрямую будет
+; записываться результат конвертации, а возвращаемое значение функции всегда
+; будет кодом ошибки. (На С сделал бы именно так)
+; Если успею реализую данный функционал.
+stoi64_err_exit:
+    mov [char_to_print], cl    
+    mov rsi, char_to_print
+    mov rdx, 1
+    call write_stdout    
+
+    mov rsi, err_wrong_char
+    mov rdx, err_wrong_char_len
+    call write_stdout
+    jmp _start
+
+; --- stoi64 ---
+
+
+; --- itos64 ---
+; @brief    Фукнция для конвертации int64 в string
+; @param    rdi - значение переменной для конвертации
+; @param    rsi - указатель на массив, куда попадут сконвертированные данные
+; @param    rdx - размер переданного в rsi массива
+; @return   rax - количество байт, записанных в rsi
+; @note     Аналог на Си: int itos64(int num, char* out_bif, size_t buf_size)
+; @note     Если в процессе парсинга происходит выход за границы массива,
+; @note     возвращает -1
+itos64:
+    xor rax, rax
+    mov r8, rdx             ; Сохранить размер переданного буфера, так как в операции div rdx будет перезаписан
+    xor r9, r9    
+    xor r10, r10
+
+    cmp rdi, 0              ; Если встретили 0, добавляем его в стэк, пропуская цикл
+    jz itos64_zero
+
+    test rdi, rdi
+    js itos64_neg    
+    
+itos64_loop:
+    cmp rdi, 0              ; Если обработали все число - выходим
+    jz itos64_fill_output   ; Если просто выйти, то в output окажется перевернутое число, 
+                            ; так как число мы обрабатываем от младшего к
+                            ; старшему.
+        
+    mov rax, rdi            ; Младшая часть делимого
+    xor rdx, rdx            ; Согласно ТЗ ограничение -32768..32768, так что старшей части никогда не будет
+    mov rcx, 10             ; Делим на 10, rax будет содержать результат целочисленного деления
+                            ; rdx будет содержать остаток от деления
+    div rcx
+    
+    mov rdi, rax            ; Переносим результат деления в rdi для дальнейшей обработки
+    add dl, '0'             ; добавляем '0' для превращения в знак
+    movzx rdx, dl 
+    push rdx
+    inc r9
+
+    cmp r9, r8              ; Проверяем на overflow
+    ja itos64_exit_err
+    
+    jmp itos64_loop 
+
+itos64_zero:
+    xor rdx, rdx
+    add dl, '0'
+    movzx rdx, dl
+    push rdx
+    inc r9
+
+itos64_fill_output:
+    xor rcx, rcx           ; Если число отрицательное, запись начнется с индекса 1
+    
+    test r10, r10               ; Проверка на наличие знака у числа
+    jz itos64_fill_output_loop
+    mov byte [rsi], '-'
+    mov rcx, 1
+
+itos64_fill_output_loop:
+    cmp rcx, r9            ; До этого мы запсали в r11 единицу, если число было отрицательным. Данная проверка выйден на единицу раньше и не перезапишет '-'.
+    je itos64_end    
+
+    pop rdx
+    mov byte [rsi + rcx], dl
+    inc rcx
+   
+    cmp rcx, r8              ; Проверяем на overflow
+    ja itos64_exit_err
+    
+    jmp itos64_fill_output_loop
+
+; Вернуть кол-во записанных в массив байт    
+itos64_end:
+    mov byte [rsi + rcx], 0
+    inc rcx
+
+    mov rax, rcx
+    ret
+
+itos64_neg:
+    mov r10, 1
+    neg rdi
+    inc r9
+    jmp itos64_loop
+
+itos64_exit_err:
     mov rax, -1
     ret
 
-exit_flip_string_overflow:
-    mov rax, -2
+; --- itos64 ---
+
+; --- sum ---
+; @brief    Фукнция для суммы двух чисел
+; @param    rdi - первое число
+; @param    rsi - второе число
+; @return   rax - результат суммы
+sum_of_two:
+    mov rax, rdi
+    add rax, rsi
     ret
-; --- flip_string ---
+; --- sum ---
 
 ; --- write_stdout ---
 ; @brief    Фукнция для записи в stdout
-; @param    r9 - указатель на буфер, из которого будут извлечены данные
-; @param    r10 - количество байт, которые необходимо записать в stdout
+; @param    rsi - указатель на буфер, из которого будут извлечены данные
+; @param    rdx - количество байт, которые необходимо записать в stdout
 ; @return   rax - размер записанных в stdout данных
 ; @note     Аналог на Си: int write_stdout(char* data, size_t input_size)
 ; @note     Проверяет rax на соответствие r9 после записи в stdout
